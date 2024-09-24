@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: adrenlinerush-wiki
+  name: adrenlinerush-wiki
+  labels:
+    app: adrenlinerush-wiki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adrenlinerush-wiki
+  template:
+    metadata:
+      labels:
+        app: adrenlinerush-wiki
+    spec:
+      containers:
+      - name: adrenlinerush-wiki
+        image: registry.rancher.adrenlinerush.site/adrenlinerush-wiki:latest
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: wiki-persistent-storage
+          mountPath: /var/www/dokuwiki
+      imagePullSecrets:
+      - name: registry-creds
+      volumes:
+      - name: wiki-persistent-storage
+        persistentVolumeClaim:
+          claimName: adrenlinerush-wiki-pvc 

@@ -1,0 +1,106 @@
+- name: Deploy wikiK8s
+  hosts: bastion
+  tasks:
+    - name: copy app defintion
+      copy:
+        src: files/app.yaml
+        dest: /root/wiki-app.yaml
+        owner: root
+        group: root
+        mode: '0644'
+    - name: copy service defintion
+      copy:
+        src: files/service.yaml
+        dest: /root/wiki-service.yaml
+        owner: root
+        group: root
+        mode: '0644'
+    - name: copy ingress defintion
+      copy:
+        src: files/ingress.yaml
+        dest: /root/wiki-ingress.yaml
+        owner: root
+        group: root
+        mode: '0644'
+    - name: copy pvc defintion
+      copy:
+        src: files/pvc.yaml
+        dest: /root/wiki-pvc.yaml
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Create namespace
+      kubernetes.core.k8s:
+        name: adrenlinerush-wiki
+        api_version: v1
+        kind: Namespace
+        state: present
+    - name: Create Docker registry secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: registry-creds
+            namespace: adrenlinerush-wiki
+          type: kubernetes.io/dockerconfigjson
+          data:
+            .dockerconfigjson: "{{
+              {
+                'auths': {
+                  'registry.rancher.adrenlinerush.site': {
+                          'auth': lookup('env', 'REGISTRY_HTTP_BASIC')
+                  }
+                }
+            } | to_json | b64encode }}"
+    - name: create pvc
+      kubernetes.core.k8s:
+        state: present
+        src: /root/wiki-pvc.yaml
+    - name: create app
+      kubernetes.core.k8s:
+        state: present
+        src: /root/wiki-app.yaml
+    - name: create service
+      kubernetes.core.k8s:
+        state: present
+        src: /root/wiki-service.yaml
+    - name: create ingress
+      kubernetes.core.k8s:
+        state: present
+        src: /root/wiki-ingress.yaml
+    - name: Add nginx configuration
+      copy:
+        src: files/nginx-adrenlinerush-wiki
+        dest: /etc/nginx/sites-available/
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart NGINX
+    - name: Enable website configuration
+      file:
+        src: /etc/nginx/sites-available/nginx-adrenlinerush-wiki
+        dest: /etc/nginx/sites-enabled/nginx-adrenlinerush-wiki
+        state: link
+      notify: Restart NGINX
+    - name: 'Get certificate'
+      command: '/usr/bin/certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /usr/local/bin/certbot-hetzner-auth.sh --manual-cleanup-hook /usr/local/bin/certbot-hetzner-cleanup.sh -d "wiki.adrenlinerush.net"'
+      args:
+        creates: '/etc/letsencrypt/live/wiki.adrenlinerush.net'
+      ignore_errors: true
+    - name: create dns record record
+      community.dns.hetzner_dns_record:
+        hetzner_token: "{{ lookup('env', 'TF_VAR_hcloud_dns_token') }}"
+        state: present
+        zone_name: "adrenlinerush.net"
+        prefix: "wiki"
+        type: A
+        value: "{{ hostvars['k3s-bastion'].ansible_host }}"
+        ttl: 60
+
+  handlers:
+    - name: Restart NGINX
+      service:
+        name: nginx
+        state: restarted
