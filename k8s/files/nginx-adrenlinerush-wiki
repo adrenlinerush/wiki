@@ -18,12 +18,47 @@ server {
 }
 
 server {
-    if ($host = wiki.adrenlinerush.net) {
-        return 301 https://$host$request_uri;
-    } # managed by Certbot
+        server_name wiki.adrenlinerush.com;
+        location  / {
+                proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+                proxy_pass http://k8s;
+                proxy_redirect default;
+                proxy_buffering off;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
 
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/wiki.adrenlinerush.com/fullchain.pem; 
+    ssl_certificate_key /etc/letsencrypt/live/wiki.adrenlinerush.com/privkey.pem;
+
+}
+
+server {
+        server_name wiki.adrenlinerush.us;
+        location  / {
+                proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+                proxy_pass http://k8s;
+                proxy_redirect default;
+                proxy_buffering off;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/wiki.adrenlinerush.us/fullchain.pem; 
+    ssl_certificate_key /etc/letsencrypt/live/wiki.adrenlinerush.us/privkey.pem;
+
+}
+
+server {
+        return 301 https://$host$request_uri;
 
         listen 80;
-        server_name wiki.adrenlinerush.net;
+        server_name wiki.adrenlinerush.com wiki.adrenlinerush.us wiki.adrenlinerush.net;
     return 404; 
 }

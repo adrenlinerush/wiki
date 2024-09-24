@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`wiki.rancher.adrenlinerush.site`) || Host(`wiki.adrenlinerush.net`)
+    - match: Host(`wiki.rancher.adrenlinerush.site`) || Host(`wiki.adrenlinerush.net`) || Host(`wiki.adrenlinerush.com`) || Host(`wiki.adrenlinerush.us`)
       kind: Rule
       services:
         - name: adrenlinerush-wiki-service

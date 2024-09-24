@@ -84,16 +84,44 @@
         dest: /etc/nginx/sites-enabled/nginx-adrenlinerush-wiki
         state: link
       notify: Restart NGINX
-    - name: 'Get certificate'
+    - name: 'Get certificate .net'
       command: '/usr/bin/certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /usr/local/bin/certbot-hetzner-auth.sh --manual-cleanup-hook /usr/local/bin/certbot-hetzner-cleanup.sh -d "wiki.adrenlinerush.net"'
       args:
         creates: '/etc/letsencrypt/live/wiki.adrenlinerush.net'
       ignore_errors: true
-    - name: create dns record record
+    - name: 'Get certificate .com'
+      command: '/usr/bin/certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /usr/local/bin/certbot-hetzner-auth.sh --manual-cleanup-hook /usr/local/bin/certbot-hetzner-cleanup.sh -d "wiki.adrenlinerush.com"'
+      args:
+        creates: '/etc/letsencrypt/live/wiki.adrenlinerush.com'
+      ignore_errors: true
+    - name: 'Get certificate .us'
+      command: '/usr/bin/certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /usr/local/bin/certbot-hetzner-auth.sh --manual-cleanup-hook /usr/local/bin/certbot-hetzner-cleanup.sh -d "wiki.adrenlinerush.us"'
+      args:
+        creates: '/etc/letsencrypt/live/wiki.adrenlinerush.us'
+      ignore_errors: true
+    - name: create dns record record .net
       community.dns.hetzner_dns_record:
         hetzner_token: "{{ lookup('env', 'TF_VAR_hcloud_dns_token') }}"
         state: present
         zone_name: "adrenlinerush.net"
+        prefix: "wiki"
+        type: A
+        value: "{{ hostvars['k3s-bastion'].ansible_host }}"
+        ttl: 60
+    - name: create dns record record .com
+      community.dns.hetzner_dns_record:
+        hetzner_token: "{{ lookup('env', 'TF_VAR_hcloud_dns_token') }}"
+        state: present
+        zone_name: "adrenlinerush.com"
+        prefix: "wiki"
+        type: A
+        value: "{{ hostvars['k3s-bastion'].ansible_host }}"
+        ttl: 60
+    - name: create dns record record .us
+      community.dns.hetzner_dns_record:
+        hetzner_token: "{{ lookup('env', 'TF_VAR_hcloud_dns_token') }}"
+        state: present
+        zone_name: "adrenlinerush.us"
         prefix: "wiki"
         type: A
         value: "{{ hostvars['k3s-bastion'].ansible_host }}"
